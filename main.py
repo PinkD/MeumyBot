@@ -14,7 +14,7 @@ from telegram.ext import run_async
 
 from bilibili.api import Bilibili
 from bilibili.model import Dynamic, DynamicType
-from config import TOKEN, UID_LIST, BOT_NAME, MIN_FETCH_DELAY, FETCH_INTERVAL, ADMIN_USERNAMES
+from config import TOKEN, UID_LIST, BOT_NAME, MIN_SEND_DELAY, MIN_FETCH_DELAY, FETCH_INTERVAL, ADMIN_USERNAMES
 from db import Database
 from utils import gen_token, async_wrap
 
@@ -162,6 +162,7 @@ async def send_to(chat_id, d: Dynamic):
         except telegram.error.TimedOut:
             print(f"send message to {chat_id} time out, dynamic is {d}")
 
+    await asyncio.sleep(MIN_SEND_DELAY)
     await send(chat_id, d)
 
 

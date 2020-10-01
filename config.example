@@ -1,0 +1,11 @@
+TOKEN = "YOUR_BOT_TOKEN"
+BOT_NAME = "YOUR_BOT_NAME"
+# bilibili uid list
+UID_LIST = [114, 514]
+ADMIN_USERNAMES = ["ADMIN_USERNAME"]
+# bot send message delay, unit second
+MIN_SEND_DELAY = 0.5
+# single fetch delay, unit second
+MIN_FETCH_DELAY = 3
+# fetch delay, unit second
+FETCH_INTERVAL = 60
