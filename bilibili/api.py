@@ -3,6 +3,7 @@ import json
 import logging
 
 from typing import List, Optional
+from urllib.error import HTTPError, URLError
 
 from urllib.request import build_opener, HTTPCookieProcessor, Request
 
@@ -106,7 +107,11 @@ class Bilibili:
             "offset_dynamic_id": 0,
             "need_top": 0
         }
-        resp = await self.request(url, payload)
+        try:
+            resp = await self.request(url, payload)
+        except HTTPError or URLError:
+            print(f"request {url}")
+            return []
         code = resp.getcode()
         if code == -412:
             logging.error("Bilibili API Throttled. Crawler paused.")
@@ -134,7 +139,12 @@ class Bilibili:
         return dyn_list
 
     async def uid_to_room_id(self, uid) -> int:
-        resp = await self.request(f"http://api.live.bilibili.com/bili/living_v2/{uid}")
+        url = f"http://api.live.bilibili.com/bili/living_v2/{uid}"
+        try:
+            resp = await self.request(url)
+        except HTTPError or URLError:
+            print(f"request {url}")
+            return 0
         resp = resp.read().decode()
         data = json.loads(resp)["data"]
         url = data["url"]
@@ -146,9 +156,14 @@ class Bilibili:
             room_id = self.__uid_room_id[uid]
         else:
             room_id = await self.uid_to_room_id(uid)
+            self.__uid_room_id[uid] = room_id
 
-        resp = await self.request(
-            f"https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id={room_id}")
+        url = f"https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id={room_id}"
+        try:
+            resp = await self.request(url)
+        except HTTPError or URLError:
+            print(f"request {url}")
+            return None
         resp = resp.read().decode()
         data = json.loads(resp)["data"]
         room_info = data["room_info"]

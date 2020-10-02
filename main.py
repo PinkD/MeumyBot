@@ -136,7 +136,8 @@ async def send_dynamic_to(chat_id, d: Dynamic):
         t = format_time(d.timestamp)
         text = f"{d.user}:\n{t}\n------\n{d.text}"
         try:
-            if d.type == DynamicType.PHOTO:
+            if d.type == DynamicType.FORWARD and len(d.photos) != 0 or \
+                    d.type == DynamicType.PHOTO:
                 if len(d.photos) == 1:
                     if d.photos[0].endswith(".gif"):
                         bot.send_animation(
@@ -165,7 +166,8 @@ async def send_dynamic_to(chat_id, d: Dynamic):
                         text=text,
                         reply_markup=origin_link(d.link),
                     )
-            elif d.type == DynamicType.FORWARD or d.type == DynamicType.PLAIN:
+            elif d.type == DynamicType.FORWARD and len(d.photos) == 0 or \
+                    d.type == DynamicType.PLAIN:
                 bot.send_message(
                     chat_id=chat_id,
                     text=text,
