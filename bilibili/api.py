@@ -7,7 +7,7 @@ from typing import List, Optional
 from urllib.request import build_opener, HTTPCookieProcessor, Request
 
 from utils import async_wrap
-from .model import Dynamic, DynamicType
+from .model import Dynamic, DynamicType, Live, LiveStatus
 
 
 def parse_card(c) -> Optional[Dynamic]:
@@ -69,9 +69,10 @@ def parse_card(c) -> Optional[Dynamic]:
 
 class Bilibili:
     def __init__(self):
-        self.disabled_until: Optional[datetime.datetime] = None
+        self.__disabled_until: Optional[datetime.datetime] = None
+        self.__uid_room_id = {}
 
-    async def request(self, url: str, payload: dict):
+    async def request(self, url: str, payload: dict = None):
         @async_wrap
         def open_req(r):
             if not hasattr(open_req, "_opener"):
@@ -82,16 +83,19 @@ class Bilibili:
             opener = open_req._opener
             return opener.open(r)
 
-        data = json.dumps(payload).encode()
+        if payload is None:
+            data = None
+        else:
+            data = json.dumps(payload).encode()
         req = Request(url, data=data, headers={"Content-Type": "application/json"})
         return await open_req(req)
 
     async def fetch(self, user_id: int, timestamp: int = 0) -> List[Dynamic]:
         print(f"fetch {user_id}")
-        if self.disabled_until:
-            if self.disabled_until < datetime.datetime.now():
+        if self.__disabled_until:
+            if self.__disabled_until < datetime.datetime.now():
                 logging.info("Bilibili crawler resumed.")
-                self.disabled_until = None
+                self.__disabled_until = None
             else:
                 return []
 
@@ -106,7 +110,7 @@ class Bilibili:
         code = resp.getcode()
         if code == -412:
             logging.error("Bilibili API Throttled. Crawler paused.")
-            self.disabled_until = datetime.datetime.now() + datetime.timedelta(minutes=30)
+            self.__disabled_until = datetime.datetime.now() + datetime.timedelta(minutes=30)
             return []
         resp = resp.read().decode()
         resp = json.loads(resp)
@@ -128,3 +132,31 @@ class Bilibili:
                 print(f"total {len(cards)}, but only return 6")
                 break
         return dyn_list
+
+    async def uid_to_room_id(self, uid) -> int:
+        resp = await self.request(f"http://api.live.bilibili.com/bili/living_v2/{uid}")
+        resp = resp.read().decode()
+        data = json.loads(resp)["data"]
+        url = data["url"]
+        uid = int(url.split("/").pop())
+        return uid
+
+    async def live(self, uid: int, last_status: LiveStatus = 0) -> Optional[Live]:
+        if uid in self.__uid_room_id:
+            room_id = self.__uid_room_id[uid]
+        else:
+            room_id = await self.uid_to_room_id(uid)
+
+        resp = await self.request(
+            f"https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id={room_id}")
+        resp = resp.read().decode()
+        data = json.loads(resp)["data"]
+        room_info = data["room_info"]
+        cover = room_info["cover"]
+        if len(cover) == 0:
+            cover = room_info["keyframe"]
+        status = LiveStatus(room_info["live_status"])
+        if status == last_status:
+            return None
+        user = data["anchor_info"]["base_info"]["uname"]
+        return Live(uid, user, room_id, room_info["title"], cover, status, room_info["live_start_time"])

@@ -13,10 +13,10 @@ from telegram.ext import Updater
 from telegram.ext import run_async
 
 from bilibili.api import Bilibili
-from bilibili.model import Dynamic, DynamicType
+from bilibili.model import Dynamic, DynamicType, LiveStatus, Live
 from config import TOKEN, UID_LIST, BOT_NAME, MIN_SEND_DELAY, MIN_FETCH_DELAY, FETCH_INTERVAL, ADMIN_USERNAMES
 from db import Database
-from utils import gen_token, async_wrap
+from utils import gen_token, async_wrap, format_time
 
 
 def send_msg(update: Update, context: CallbackContext, msg: str, md=False):
@@ -109,12 +109,31 @@ def origin_link(content):
     return InlineKeyboardMarkup([[InlineKeyboardButton(text="link", url=content)]])
 
 
-async def send_to(chat_id, d: Dynamic):
+def room_link(room_id):
+    return f"https://live.bilibili.com/{room_id}"
+
+
+async def send_live_to(chat_id, l: Live):
+    @async_wrap
+    def send(chat_id, l: Live):
+        bot: Bot = updater.bot
+        t = format_time(l.live_start_time)
+        text = f"{l.user} is living:\n{t}\n------\n{l.title}"
+        bot.send_photo(
+            chat_id=chat_id,
+            photo=l.cover,
+            caption=text,
+            reply_markup=origin_link(room_link(l.room_id))
+        )
+
+    await send(chat_id, l)
+
+
+async def send_dynamic_to(chat_id, d: Dynamic):
     @async_wrap
     def send(chat_id, d: Dynamic):
         bot: Bot = updater.bot
-        t = time.localtime(d.timestamp)
-        t = time.strftime("%Y-%m-%d %H:%M:%S %z", t)
+        t = format_time(d.timestamp)
         text = f"{d.user}:\n{t}\n------\n{d.text}"
         try:
             if d.type == DynamicType.PHOTO:
@@ -166,24 +185,43 @@ async def send_to(chat_id, d: Dynamic):
     await send(chat_id, d)
 
 
-async def send_to_all(d: Dynamic):
+async def send_to_all(d: Dynamic = None, l: Live = None):
     tasks = []
-    for chat_id in chats:
-        tasks.append(send_to(chat_id, d))
+    if d is not None:
+        for chat_id in chats:
+            tasks.append(send_dynamic_to(chat_id, d))
+    if l is not None:
+        for chat_id in chats:
+            tasks.append(send_live_to(chat_id, l))
     await asyncio.gather(*tasks)
+
+
+async def fetch_and_send_single(uid: int):
+    dyn = await fetcher.fetch(uid, fetch_record[uid])
+    dyn.sort(key=lambda d: d.timestamp)
+    tasks = []
+    for d in dyn:
+        print(f"send_to_all {d}")
+        tasks.append(send_to_all(d=d))
+        fetch_record[uid] = d.timestamp
+    await asyncio.gather(*tasks)
+    last_status = live_record[uid]
+    l = await fetcher.live(uid, last_status)
+    if l is None:
+        return
+    if last_status == LiveStatus.PREPARE and l.status == LiveStatus.LIVE:
+        print(f"send_to_all {l}")
+        await send_to_all(l=l)
+        db.add_live(uid)
+    else:
+        db.del_live(uid)
+    live_record[uid] = l.status
 
 
 async def fetch_all():
     for uid in fetch_record:
-        dyn = await fetcher.fetch(uid, fetch_record[uid])
-        dyn.sort(key=lambda d: d.timestamp)
         start = time.time()
-        tasks = []
-        for d in dyn:
-            print(f"send_to_all {d}")
-            tasks.append(send_to_all(d))
-            fetch_record[uid] = d.timestamp
-        await asyncio.gather(*tasks)
+        await fetch_and_send_single(uid)
         min_interval = MIN_FETCH_DELAY
         t = random.random()
         print(t)
@@ -209,11 +247,19 @@ if __name__ == '__main__':
     chats = set()
     tokens = set()
     fetch_record = dict()
+    live_record = dict()
 
     fetcher = Bilibili()
+    now = int(time.time())
+    for uid in UID_LIST:
+        fetch_record[uid] = now
+        live_record[uid] = LiveStatus.PREPARE
+
     db = Database("data.json")
     for s in db.subscriber():
         chats.add(s)
+    for uid in db.live():
+        live_record[uid] = LiveStatus.LIVE
 
     updater = Updater(TOKEN, use_context=True)
     dispatcher = updater.dispatcher
@@ -221,9 +267,6 @@ if __name__ == '__main__':
     dispatcher.add_handler(CommandHandler("register", cmd_register))
     dispatcher.add_handler(CommandHandler("unregister", cmd_unregister))
     dispatcher.add_handler(CommandHandler("token", cmd_token, filters=Filters.private))
-    now = int(time.time())
-    for uid in UID_LIST:
-        fetch_record[uid] = now
     t = threading.Thread(target=fetch_loop)
     t.start()
     updater.start_polling()

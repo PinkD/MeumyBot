@@ -35,3 +35,20 @@ class Dynamic:
     photos: List[str]
     link: str
     timestamp: int
+
+
+class LiveStatus(IntEnum):
+    DISABLED = 0
+    LIVE = 1
+    PREPARE = 2
+
+
+@dataclass
+class Live:
+    uid: int
+    user: str
+    room_id: int
+    title: str
+    cover: str
+    status: LiveStatus
+    live_start_time: int

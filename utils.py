@@ -21,3 +21,8 @@ def async_wrap(func):
         return await loop.run_in_executor(executor, f)
 
     return run
+
+
+def format_time(t: int):
+    t = time.localtime(t)
+    return time.strftime("%Y-%m-%d %H:%M:%S %z", t)
