@@ -61,7 +61,9 @@ def parse_card(c) -> Optional[Dynamic]:
         user = card["owner"]["name"]
         link = f'https://www.bilibili.com/video/av{card["aid"]}'
         img = [card["pic"]]
-        t = card["ctime"]
+        t = card["pubdate"]
+        if t == 0:
+            t = card["ctime"]
     else:
         return None
 
