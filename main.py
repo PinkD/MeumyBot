@@ -126,7 +126,10 @@ async def send_live_to(chat_id, l: Live):
             reply_markup=origin_link(room_link(l.room_id))
         )
 
-    await send(chat_id, l)
+    try:
+        await send(chat_id, l)
+    except telegram.TelegramError as e:
+        print(f"failed to send {l} to {chat_id}: {e}")
 
 
 async def send_dynamic_to(chat_id, d: Dynamic):
@@ -184,7 +187,10 @@ async def send_dynamic_to(chat_id, d: Dynamic):
             print(f"send message to {chat_id} time out, dynamic is {d}")
 
     await asyncio.sleep(MIN_SEND_DELAY)
-    await send(chat_id, d)
+    try:
+        await send(chat_id, d)
+    except telegram.TelegramError as e:
+        print(f"failed to send {d} to {chat_id}: {e}")
 
 
 async def send_to_all(d: Dynamic = None, l: Live = None):
