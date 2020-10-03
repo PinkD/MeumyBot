@@ -4,7 +4,6 @@ import logging
 
 from typing import List, Optional
 from urllib.error import HTTPError, URLError
-
 from urllib.request import build_opener, HTTPCookieProcessor, Request
 
 from utils import async_wrap
@@ -111,8 +110,8 @@ class Bilibili:
         }
         try:
             resp = await self.request(url, payload)
-        except HTTPError or URLError:
-            print(f"request {url}")
+        except (HTTPError, URLError) as e:
+            print(f"request {url}: {e}")
             return []
         code = resp.getcode()
         if code == -412:
@@ -144,8 +143,8 @@ class Bilibili:
         url = f"http://api.live.bilibili.com/bili/living_v2/{uid}"
         try:
             resp = await self.request(url)
-        except HTTPError or URLError:
-            print(f"request {url}")
+        except (HTTPError, URLError) as e:
+            print(f"request {url}: {e}")
             return 0
         resp = resp.read().decode()
         data = json.loads(resp)["data"]
@@ -163,8 +162,8 @@ class Bilibili:
         url = f"https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id={room_id}"
         try:
             resp = await self.request(url)
-        except HTTPError or URLError:
-            print(f"request {url}")
+        except (HTTPError, URLError) as e:
+            print(f"request {url}: {e}")
             return None
         resp = resp.read().decode()
         data = json.loads(resp)["data"]
