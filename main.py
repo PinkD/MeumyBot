@@ -16,7 +16,7 @@ from telegram.ext import run_async
 from bilibili.api import Bilibili
 from bilibili.model import Dynamic, DynamicType, LiveStatus, Live
 from config import TOKEN, UID_LIST, BOT_NAME, MIN_SEND_DELAY, MIN_FETCH_DELAY, FETCH_INTERVAL, ADMIN_USERNAMES, \
-    LOG_LEVEL
+    LOG_LEVEL, LOG_FILE
 from db import Database
 from utils import gen_token, async_wrap, format_time
 
@@ -209,7 +209,9 @@ async def send_to_all(d: Dynamic = None, l: Live = None):
 async def fetch_and_send_single(uid: int):
     dyn = await fetcher.fetch(uid, fetch_record[uid])
     dyn.sort(key=lambda d: d.timestamp)
-    logging.info(f"fetched {len(dyn)} dynamics for {uid}")
+
+    if (l := len(dyn)) != 0:
+        logging.info(f"fetched {l} dynamics for {uid}")
     tasks = []
     for d in dyn:
         logging.info(f"send_to_all {d}")
@@ -279,9 +281,11 @@ if __name__ == '__main__':
     dispatcher.add_handler(CommandHandler("unregister", cmd_unregister))
     dispatcher.add_handler(CommandHandler("token", cmd_token, filters=Filters.private))
     t = threading.Thread(target=fetch_loop)
-    logging.basicConfig(format='%(asctime)s %(message)s', level=LOG_LEVEL)
+
+    logging.basicConfig(format='%(asctime)s %(message)s', level=LOG_LEVEL, filename=LOG_FILE)
     logging.info("start fetch loop")
     t.start()
     logging.info("start polling telegram messages")
     updater.start_polling()
+    print("bot is now running")
     updater.idle()
