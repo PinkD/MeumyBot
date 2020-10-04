@@ -1,3 +1,6 @@
+from logging import INFO
+
+LOG_LEVEL = INFO
 TOKEN = "YOUR_BOT_TOKEN"
 BOT_NAME = "YOUR_BOT_NAME"
 # bilibili uid list

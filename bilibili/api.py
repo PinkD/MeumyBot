@@ -93,7 +93,7 @@ class Bilibili:
         return await open_req(req)
 
     async def fetch(self, user_id: int, timestamp: int = 0) -> List[Dynamic]:
-        print(f"fetch {user_id}")
+        logging.debug(f"fetch {user_id}")
         if self.__disabled_until:
             if self.__disabled_until < datetime.datetime.now():
                 logging.info("Bilibili crawler resumed.")
@@ -111,7 +111,7 @@ class Bilibili:
         try:
             resp = await self.request(url, payload)
         except (HTTPError, URLError) as e:
-            print(f"request {url}: {e}")
+            logging.warning(f"request {url}: {e}")
             return []
         code = resp.getcode()
         if code == -412:
@@ -135,7 +135,7 @@ class Bilibili:
             dyn_list.append(dyn)
             counter += 1
             if counter == 6:
-                print(f"total {len(cards)}, but only return 6")
+                logging.info(f"total {len(cards)}, but only return 6")
                 break
         return dyn_list
 
@@ -144,7 +144,7 @@ class Bilibili:
         try:
             resp = await self.request(url)
         except (HTTPError, URLError) as e:
-            print(f"request {url}: {e}")
+            logging.warning(f"request {url}: {e}")
             return 0
         resp = resp.read().decode()
         data = json.loads(resp)["data"]
@@ -163,7 +163,7 @@ class Bilibili:
         try:
             resp = await self.request(url)
         except (HTTPError, URLError) as e:
-            print(f"request {url}: {e}")
+            logging.warning(f"request {url}: {e}")
             return None
         resp = resp.read().decode()
         data = json.loads(resp)["data"]

@@ -1,4 +1,5 @@
 import json
+import logging
 
 
 class Database:
@@ -25,9 +26,9 @@ class Database:
                     self.__data = json.loads(data)
                     self.__convert_to_int()
                 except json.JSONDecodeError:
-                    print(f"failed to load {self.__file}, content is {data}")
+                    logging.warning(f"failed to load {self.__file}, content is {data}")
         except FileNotFoundError:
-            print("no old data file")
+            logging.info("no old data file")
         keys = ["subscriber", "live"]
         for k in keys:
             if k not in self.__data:
