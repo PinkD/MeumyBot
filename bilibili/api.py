@@ -149,6 +149,8 @@ class Bilibili:
         resp = resp.read().decode()
         data = json.loads(resp)["data"]
         url = data["url"]
+        if len(url) == 0:
+            return 0
         uid = int(url.split("/").pop())
         return uid
 
@@ -158,7 +160,11 @@ class Bilibili:
         else:
             room_id = await self.uid_to_room_id(uid)
             self.__uid_room_id[uid] = room_id
+            if room_id == 0:
+                logging.info(f"there's no room_id for user {uid}, maybe live is disabled")
 
+        if room_id == 0:
+            return
         url = f"https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id={room_id}"
         try:
             resp = await self.request(url)
