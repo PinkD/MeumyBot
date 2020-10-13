@@ -207,7 +207,11 @@ async def send_to_all(d: Dynamic = None, l: Live = None):
 
 
 async def fetch_and_send_single(uid: int):
-    dyn = await fetcher.fetch(uid, fetch_record[uid])
+    try:
+        dyn = await fetcher.fetch(uid, fetch_record[uid])
+    except KeyError as e:
+        print(f"fetch dynamic for {uid}: {e}")
+        return
     dyn.sort(key=lambda d: d.timestamp)
 
     if (l := len(dyn)) != 0:
@@ -219,7 +223,11 @@ async def fetch_and_send_single(uid: int):
         fetch_record[uid] = d.timestamp
     await asyncio.gather(*tasks)
     last_status = live_record[uid]
-    l = await fetcher.live(uid, last_status)
+    try:
+        l = await fetcher.live(uid, last_status)
+    except KeyError as e:
+        print(f"fetch live for {uid}: {e}")
+        return
     if l is None:
         return
     if last_status == LiveStatus.PREPARE and l.status == LiveStatus.LIVE:
