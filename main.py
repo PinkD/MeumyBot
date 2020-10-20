@@ -250,7 +250,8 @@ async def fetch_all():
         t *= min_interval
         t -= time.time() - start
         logging.debug(f"short sleep {t}")
-        await asyncio.sleep(t)
+        if t > 0:
+            await asyncio.sleep(t)
 
 
 def fetch_loop():
