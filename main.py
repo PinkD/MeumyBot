@@ -249,8 +249,10 @@ async def fetch_all():
         t += 1
         t *= min_interval
         t -= time.time() - start
-        logging.debug(f"short sleep {t}")
-        if t > 0:
+        if t <= 0:
+            logging.warning(f"sleep time {t} less than 0, skip")
+        else:
+            logging.debug(f"short sleep {t}")
             await asyncio.sleep(t)
 
 
@@ -261,8 +263,11 @@ def fetch_loop():
             asyncio.run(fetch_all())
         t = FETCH_INTERVAL
         t -= time.time() - start
-        logging.debug(f"long sleep {t}")
-        time.sleep(t)
+        if t <= 0:
+            logging.warning(f"sleep time {t} less than 0, skip")
+        else:
+            logging.debug(f"long sleep {t}")
+            time.sleep(t)
 
 
 if __name__ == '__main__':
