@@ -225,7 +225,7 @@ async def fetch_and_send_single(uid: int):
     last_status = live_record[uid]
     try:
         l = await fetcher.live(uid, last_status)
-    except KeyError as e:
+    except (KeyError, TypeError) as e:
         print(f"fetch live for {uid}: {e}")
         return
     if l is None:
