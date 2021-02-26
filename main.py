@@ -325,4 +325,6 @@ if __name__ == '__main__':
     except Exception as e:
         logging.warning(f"async thread exit with err: {e}")
         stop()
+        # exit with non-zero code can tell systemd to restart this
+        exit(1)
     logging.info("bot exited")
