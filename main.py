@@ -267,10 +267,14 @@ def fetch_loop():
             logging.warning(f"sleep time {t} less than 0, skip")
         else:
             logging.debug(f"long sleep {t}")
-            time.sleep(t)
+            if event.wait(t):
+                # `wait` return true if event is set
+                return
 
 
 if __name__ == '__main__':
+    event = threading.Event()
+
     chats = set()
     tokens = set()
     fetch_record = dict()
@@ -301,5 +305,24 @@ if __name__ == '__main__':
     t.start()
     logging.info("start polling telegram messages")
     updater.start_polling()
-    print("bot is now running")
-    updater.idle()
+    logging.info("bot is now running")
+
+    from signal import SIGABRT, SIGINT, SIGTERM, signal
+
+
+    def stop():
+        logging.info("bot exiting")
+        updater.stop()
+        event.set()
+
+
+    for sig in (SIGINT, SIGTERM, SIGABRT):
+        signal(sig, lambda signum, frame: stop())
+
+    logging.info("join async thread")
+    try:
+        t.join()
+    except Exception as e:
+        logging.warning(f"async thread exit with err: {e}")
+        stop()
+    logging.info("bot exited")
