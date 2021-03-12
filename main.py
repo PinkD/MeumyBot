@@ -209,7 +209,7 @@ async def send_to_all(d: Dynamic = None, l: Live = None):
 async def fetch_and_send_single(uid: int):
     try:
         dyn = await fetcher.fetch(uid, fetch_record[uid])
-    except KeyError as e:
+    except Exception as e:
         print(f"fetch dynamic for {uid}: {e}")
         return
     dyn.sort(key=lambda d: d.timestamp)
@@ -225,7 +225,7 @@ async def fetch_and_send_single(uid: int):
     last_status = live_record[uid]
     try:
         l = await fetcher.live(uid, last_status)
-    except (KeyError, TypeError) as e:
+    except Exception as e:
         print(f"fetch live for {uid}: {e}")
         return
     if l is None:
