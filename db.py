@@ -43,7 +43,8 @@ class Database:
         self.__save_data()
 
     def del_subscribe(self, chat_id: int):
-        del self.__data["subscriber"][chat_id]
+        if chat_id in self.__data["subscriber"]:
+            del self.__data["subscriber"][chat_id]
         self.__save_data()
 
     def subscriber(self) -> list:
@@ -54,7 +55,8 @@ class Database:
         self.__save_data()
 
     def del_live(self, chat_id: int):
-        del self.__data["live"][chat_id]
+        if chat_id in self.__data["live"]:
+            del self.__data["live"][chat_id]
         self.__save_data()
 
     def live(self) -> list:
