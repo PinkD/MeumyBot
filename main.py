@@ -303,9 +303,19 @@ if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s %(message)s', level=LOG_LEVEL, filename=LOG_FILE)
     logging.info("start fetch loop")
     t.start()
+
+
+    def keep_updater_alive():
+        while not event.wait(5):
+            if not updater.running:
+                updater.start_polling()
+
+
+    kt = threading.Thread(target=keep_updater_alive)
     logging.info("start polling telegram messages")
     updater.start_polling()
     logging.info("bot is now running")
+    kt.start()
 
     from signal import SIGABRT, SIGINT, SIGTERM, signal
 
