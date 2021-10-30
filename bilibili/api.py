@@ -93,8 +93,9 @@ class Bilibili:
         return await open_req(req)
 
     async def fetch(self, user_id: int, timestamp: int = 0) -> List[Dynamic]:
-        logging.debug(f"fetch {user_id}")
+        logging.debug(f"fetch for user {user_id}")
         if self.__disabled_until:
+            logging.debug(f"throttled, skip fetch for user {user_id}")
             if self.__disabled_until < datetime.datetime.now():
                 logging.info("Bilibili crawler resumed.")
                 self.__disabled_until = None
@@ -113,9 +114,12 @@ class Bilibili:
         except (HTTPError, URLError) as e:
             logging.warning(f"request {url}: {e}")
             return []
+        except Exception as e:
+            logging.error(f"request {url} got unknown exception: {e}")
+            return []
         code = resp.getcode()
         if code == -412:
-            logging.error("Bilibili API Throttled. Crawler paused.")
+            logging.error("bilibili api throttled")
             self.__disabled_until = datetime.datetime.now() + datetime.timedelta(minutes=30)
             return []
         resp = resp.read().decode()
@@ -146,6 +150,9 @@ class Bilibili:
         except (HTTPError, URLError) as e:
             logging.warning(f"request {url}: {e}")
             return 0
+        except Exception as e:
+            logging.error(f"request {url} got unknown exception: {e}")
+            return 0
         resp = resp.read().decode()
         data = json.loads(resp)["data"]
         url = data["url"]
@@ -170,6 +177,9 @@ class Bilibili:
             resp = await self.request(url)
         except (HTTPError, URLError) as e:
             logging.warning(f"request {url}: {e}")
+            return None
+        except Exception as e:
+            logging.error(f"request {url} got unknown exception: {e}")
             return None
         resp = resp.read().decode()
         data = json.loads(resp)["data"]

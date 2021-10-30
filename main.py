@@ -3,6 +3,7 @@ import random
 import threading
 import time
 import logging
+from logging.handlers import TimedRotatingFileHandler
 
 import telegram
 from telegram import Update, Bot, InputMediaPhoto, ParseMode, InlineKeyboardMarkup, \
@@ -210,7 +211,7 @@ async def fetch_and_send_single(uid: int):
     try:
         dyn = await fetcher.fetch(uid, fetch_record[uid])
     except Exception as e:
-        print(f"fetch dynamic for {uid}: {e}")
+        logging.error(f"fetch dynamic for {uid}: {e}")
         return
     dyn.sort(key=lambda d: d.timestamp)
 
@@ -226,7 +227,7 @@ async def fetch_and_send_single(uid: int):
     try:
         l = await fetcher.live(uid, last_status)
     except Exception as e:
-        print(f"fetch live for {uid}: {e}")
+        logging.error(f"fetch live for {uid}: {e}")
         return
     if l is None:
         return
@@ -300,7 +301,8 @@ if __name__ == '__main__':
     dispatcher.add_handler(CommandHandler("token", cmd_token, filters=Filters.private))
     t = threading.Thread(target=fetch_loop)
 
-    logging.basicConfig(format='%(asctime)s %(message)s', level=LOG_LEVEL, filename=LOG_FILE)
+    rotate_handler = TimedRotatingFileHandler(LOG_FILE, when="d")
+    logging.basicConfig(format='%(asctime)s %(message)s', level=LOG_LEVEL, filename=LOG_FILE, handlers=[rotate_handler])
     logging.info("start fetch loop")
     t.start()
 
