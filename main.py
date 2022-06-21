@@ -299,17 +299,6 @@ if __name__ == '__main__':
     dispatcher.add_handler(CommandHandler("register", cmd_register))
     dispatcher.add_handler(CommandHandler("unregister", cmd_unregister))
     dispatcher.add_handler(CommandHandler("token", cmd_token, filters=Filters.private))
-    t = threading.Thread(target=fetch_loop)
-
-    rotate_handler = TimedRotatingFileHandler(LOG_FILE, when="d")
-    logging.basicConfig(format='%(asctime)s %(message)s', level=LOG_LEVEL, filename=LOG_FILE, handlers=[rotate_handler])
-    logging.info("start fetch loop")
-    t.start()
-    logging.info("start polling telegram messages")
-    updater.start_polling()
-    logging.info("bot is now running")
-
-    from signal import SIGABRT, SIGINT, SIGTERM, signal
 
 
     def stop():
@@ -317,6 +306,23 @@ if __name__ == '__main__':
         updater.stop()
         event.set()
 
+
+    def error_handler(update, ctx):
+        stop()
+
+
+    dispatcher.add_error_handler(error_handler)
+    t = threading.Thread(target=fetch_loop)
+
+    rotate_handler = TimedRotatingFileHandler(LOG_FILE, when="d")
+    logging.basicConfig(format='%(asctime)s %(message)s', level=LOG_LEVEL, handlers=[rotate_handler])
+    logging.info("start fetch loop")
+    t.start()
+    logging.info("start polling telegram messages")
+    updater.start_polling()
+    logging.info("bot is now running")
+
+    from signal import SIGABRT, SIGINT, SIGTERM, signal
 
     for sig in (SIGINT, SIGTERM, SIGABRT):
         signal(sig, lambda signum, frame: stop())
