@@ -14,6 +14,7 @@ from telegram.ext import Filters
 from telegram.ext import Updater
 from telegram.ext import run_async
 
+import debug
 from bilibili.api import Bilibili
 from bilibili.model import Dynamic, DynamicType, LiveStatus, Live
 from config import TOKEN, UID_LIST, BOT_NAME, MIN_SEND_DELAY, MIN_FETCH_DELAY, FETCH_INTERVAL, ADMIN_USERNAMES, \
@@ -274,6 +275,8 @@ def fetch_loop():
 
 
 if __name__ == '__main__':
+    debug.handle_sigusr1()
+
     event = threading.Event()
 
     chats = set()

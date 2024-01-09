@@ -61,3 +61,4 @@ class Database:
 
     def live(self) -> list:
         return self.__data["live"].keys()
+
